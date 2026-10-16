@@ -1,0 +1,77 @@
+{
+  "tested_commit": "201cd043996b046cf807c9ec62834b5f69b2c5d3",
+  "clean_clone_path": "C:\\Users\\boabo\\AppData\\Local\\Temp\\day27-clean-gi5akt_m\\KX-DAY27-NguyenHongThai-2A202602894",
+  "env_created_from_example": true,
+  "no_github_user_override": true,
+  "reviewer_derived_from_token": [
+    "thaijaor",
+    "thaijaor"
+  ],
+  "working_tree_clean_after_runs": true,
+  "code_unchanged": true,
+  "offline_tests": "14/14",
+  "commands": [
+    {
+      "name": "clone",
+      "command": "git clone https://github.com/thaijaor/KX-DAY27-NguyenHongThai-2A202602894.git C:\\Users\\boabo\\AppData\\Local\\Temp\\day27-clean-gi5akt_m\\KX-DAY27-NguyenHongThai-2A202602894",
+      "returncode": 0
+    },
+    {
+      "name": "sync",
+      "command": "uv sync --locked",
+      "returncode": 0
+    },
+    {
+      "name": "tests",
+      "command": "uv run python -m unittest discover -s tests -v",
+      "returncode": 0
+    },
+    {
+      "name": "exercise1-pr1",
+      "command": "uv run python exercises/exercise_1_confidence.py --pr https://github.com/VinUni-AI20k/PR-Demo/pull/1",
+      "returncode": 0
+    },
+    {
+      "name": "exercise1-pr2",
+      "command": "uv run python exercises/exercise_1_confidence.py --pr https://github.com/VinUni-AI20k/PR-Demo/pull/2",
+      "returncode": 0
+    },
+    {
+      "name": "exercise2",
+      "command": "uv run python exercises/exercise_2_hitl.py --pr https://github.com/VinUni-AI20k/PR-Demo/pull/1",
+      "returncode": 0
+    },
+    {
+      "name": "exercise3",
+      "command": "uv run python exercises/exercise_3_escalation.py --pr https://github.com/VinUni-AI20k/PR-Demo/pull/2",
+      "returncode": 0
+    },
+    {
+      "name": "exercise4",
+      "command": "uv run python exercises/exercise_4_audit.py --pr https://github.com/VinUni-AI20k/PR-Demo/pull/1 --thread day27-clean-20261016T043249",
+      "returncode": 0
+    },
+    {
+      "name": "replay",
+      "command": "uv run python -m audit.replay --thread day27-clean-20261016T043249",
+      "returncode": 0
+    },
+    {
+      "name": "sessions",
+      "command": "uv run python -m audit.replay --list",
+      "returncode": 0
+    },
+    {
+      "name": "resume",
+      "command": "uv run python exercises/exercise_4_audit.py --pr https://github.com/VinUni-AI20k/PR-Demo/pull/1 --thread day27-clean-20261016T043249",
+      "returncode": 0
+    },
+    {
+      "name": "streamlit",
+      "command": "C:\\Users\\boabo\\AppData\\Local\\Temp\\day27-clean-gi5akt_m\\KX-DAY27-NguyenHongThai-2A202602894\\.venv\\Scripts\\python.exe -m streamlit run app.py --server.headless true --server.address 127.0.0.1 --server.port 8528 --browser.gatherUsageStats false",
+      "health_status": 200,
+      "live_gemini_ui_result": "human_approval -> reject",
+      "screenshot": "clean-ui-rejected.png"
+    }
+  ]
+}

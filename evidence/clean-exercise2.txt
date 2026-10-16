@@ -1,0 +1,79 @@
+thread_id = 0e56f7e7-61b7-44d9-bd19-e7bd7a27a39a
+fetch_pr: 3 files, head=1646156
+analyze: confidence=65%
+route: human_approval (confidence=65%)
+┌────────────────────────────────────────────────────────────────────── Approval — 65% ───────────────────────────────────────────────────────────────────────┐
+│ This pull request adds a priority field to tasks in the tasktrack application. It updates the Task data model, the SQLite database schema and storage layer │
+│ to store and retrieve the priority value, and the CLI to accept a --priority flag during task creation and display priority labels when listing tasks.      │
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+The changes are straightforward and clean, but the lack of an explicit database migration for the new SQLite column presents a backward-compatibility risk for
+existing databases.
+issue tasktrack/storage.py:10 — Using CREATE TABLE IF NOT EXISTS will not add the priority column to existing SQLite databases that were already initialized. A
+proper migration strategy or ALTER TABLE statement is needed for backward compatibility.
+suggestion tasktrack/cli.py:15 — Consider adding choices=[0, 1, 2] to the --priority argument parser to prevent users from passing invalid priority values.
+diff --git a/tasktrack/cli.py b/tasktrack/cli.py
+index 8649551..af7db5e 100644
+--- a/tasktrack/cli.py
++++ b/tasktrack/cli.py
+@@ -3,12 +3,16 @@
+ from .storage import Storage
+
+
++PRIORITY_LABEL = {0: " ", 1: "!", 2: "!!"}
++
++
+ def main() -> None:
+     parser = argparse.ArgumentParser(prog="tasktrack")
+     sub = parser.add_subparsers(dest="cmd", required=True)
+
+     p_add = sub.add_parser("add", help="Add a task")
+     p_add.add_argument("title")
++    p_add.add_argument("--priority", type=int, default=0, help="0=normal, 1=high, 2=urgent")
+
+     sub.add_parser("list", help="List all tasks")
+
+@@ -19,12 +23,13 @@ def main() -> None:
+     store = Storage()
+
+     if args.cmd == "add":
+-        t = store.add(args.title)
++        t = store.add(args.title, priority=args.priority)
+         print(f"[{t.id}] {t.title}")
+     elif args.cmd == "list":
+         for t in store.list():
+             mark = "x" if t.done else " "
+-            print(f"[{mark}] {t.id:>3}  {t.title}")
++            pr = PRIORITY_LABEL.get(t.priority, "?")
++            print(f"[{mark}] {pr:>2} {t.id:>3}  {t.title}")
+     elif args.cmd == "done":
+         store.mark_done(args.task_id)
+         print(f"Marked task {args.task_id} done")
+diff --git a/tasktrack/models.py b/tasktrack/models.py
+index 9fb4701..cce0f4e 100644
+--- a/tasktrack/models.py
++++ b/tasktrack/models.py
+@@ -6,3 +6,4 @@ class Task:
+     id: int | None
+     title: str
+     done: bool = False
++    priority: int = 0   # 0 = normal, 1 = high, 2 = urgent
+diff --git a/tasktrack/storage.py b/tasktrack/storage.py
+index a1f4f6c..e615a08 100644
+--- a/tasktrack/storage.py
++++ b/tasktrack/storage.py
+@@ -9,9 +9,10 @@
+
+ SCHEMA = """
+ CREATE TABLE IF NOT EXISTS tasks (
+-    id    INTEGER PRIMARY KEY AUTOINCREMENT,
+-    title TEXT    NOT NULL,
+-    done  INTEGER NOT NULL DEFAULT 0
++    id       INTEGER PRIMARY KEY AUTOINCREMENT,
++    title    TEXT    NOT NULL,
++    done     INTEGER NOT NULL DEFAULT 0,
++    priority INTEGER NOT NULL DEFAULT 0
+ )
+ """
+
+@
+approve/reject/edit? Replacement review body / feedback: final_action = rejected

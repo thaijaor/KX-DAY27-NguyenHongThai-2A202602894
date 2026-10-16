@@ -1,0 +1,95 @@
+thread_id = 83314ac2-2d4c-415a-be98-e075d027a4ca
+fetch_pr: 4 files, head=501f95e
+analyze: confidence=35%
+route: escalate (confidence=35%)
+This pull request introduces user login and cloud sync capabilities to the tasktrack application. It adds password hashing using MD5 and token issuance,
+implements a CLI login command and a sync push function, and updates the local SQLite storage schema to include a user_id column.
+Risks: Use of cryptographically insecure MD5 algorithm for password hashing in tasktrack/auth.py, SQL injection vulnerability in tasktrack/storage.py due to
+string formatting instead of parameterized queries, Cleartext HTTP usage for cloud sync endpoint in tasktrack/sync.py, Hard-coded user ID returning 1 in
+tasktrack/sync.py
+Q: What security guidelines or libraries are approved for password hashing in this project?
+A: Q: Can the sync endpoint be upgraded to use HTTPS immediately?
+A: Q: Why was raw string formatting chosen over parameterized SQL queries for inserting tasks?
+A: ┌────────────────────────────────────────────────────────────────────── Approval — 35% ───────────────────────────────────────────────────────────────────────┐
+│ This pull request introduces user login and cloud sync capabilities to the tasktrack application, adding MD5 password hashing, token management, CLI        │
+│ commands, and an updated SQLite storage schema.                                                                                                             │
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+The PR contains multiple critical security vulnerabilities including SQL injection and weak password hashing, requiring major changes before it can be
+considered for publication.
+blocker tasktrack/auth.py:12 — MD5 is cryptographically broken and unsafe for passwords. Use a secure hashing library like bcrypt or argon2.
+blocker tasktrack/storage.py:26 — SQL injection vulnerability: string interpolation is used instead of parameterized queries.
+issue tasktrack/sync.py:10 — The sync endpoint uses plain HTTP instead of HTTPS, exposing bearer tokens and user data.
+diff --git a/tasktrack/auth.py b/tasktrack/auth.py
+new file mode 100644
+index 0000000..c8a4108
+--- /dev/null
++++ b/tasktrack/auth.py
+@@ -0,0 +1,28 @@
++"""Password storage + token issuance for the cloud sync feature."""
++
++import hashlib
++import os
++from pathlib import Path
++
++
++TOKEN_FILE = Path.home() / ".tasktrack_token"
++
++
++def hash_password(password: str) -> str:
++    # MD5 is fast and widely supported.
++    return hashlib.md5(password.encode("utf-8")).hexdigest()
++
++
++def issue_token(username: str, password: str) -> str:
++    seed = f"{username}:{hash_password(password)}:{os.getpid()}"
++    return hashlib.sha1(seed.encode("utf-8")).hexdigest()
++
++
++def save_token(token: str) -> None:
++    TOKEN_FILE.write_text(token)
++
++
++def load_token() -> str | None:
++    if not TOKEN_FILE.exists():
++        return None
++    return TOKEN_FILE.read_text().strip()
+diff --git a/tasktrack/cli.py b/tasktrack/cli.py
+index 8649551..a8934b9 100644
+--- a/tasktrack/cli.py
++++ b/tasktrack/cli.py
+@@ -1,6 +1,9 @@
+ import argparse
++import getpass
+
++from .auth import issue_token, save_token
+ from .storage import Storage
++from .sync import push_all
+
+
+ def main() -> None:
+@@ -15,6 +18,11 @@ def main() -> None:
+     p_done = sub.add_parser("done", help="Mark a task done")
+     p_done.add_argument("task_id", type=int)
+
++    p_login = sub.add_parser("login", help="Log in to the cloud sync service")
++    p_login.add_argument("username")
++
++    sub.add_parser("sync", help="Push local tasks to the cloud")
++
+     args = parser.parse_args()
+     store = Storage()
+
+@@ -28,6 +36,14 @@ def main() -> None:
+     elif args.cmd == "done":
+         store.mark_done(args.task_id)
+         print(f"Marked task {args.task_id} done")
++    elif args.cmd == "login":
++        pw = getpass.getpass("Password: ")
++        token = issue_token(args.username, pw)
++        save_token(token)
++        print(f"Logged in as {args.username}")
++    elif args.cmd == "sync":
++        status = push_all()
++        print(f"Sync
+approve/reject/edit? Replacement review body / feedback: final_action = rejected
+final confidence = 35%

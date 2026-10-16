@@ -90,7 +90,34 @@ Các lựa chọn và câu trả lời trong kiểm chứng được nhập bằ
 
 ## Kiểm tra bản clone sạch
 
-Kết quả cụ thể được bổ sung sau khi chạy kiểm tra trên commit lời giải.
+Đã clone mới từ GitHub tại commit code `201cd043996b046cf807c9ec62834b5f69b2c5d3`,
+tạo `.env` từ `.env.example`, điền credential và chạy `uv sync --locked`.
+Không chép virtualenv hay DB từ bản làm việc; không sửa code sau khi clone.
+
+- `uv sync --locked` thành công; 14/14 test offline qua trong virtualenv mới.
+- Cả 4 exercise, hai PR của exercise 1, `audit.replay --thread` và `--list` đều exit 0.
+- Chạy lại exercise 4 với cùng `--thread` trong tiến trình mới: khôi phục kết quả reject, không fetch/analyze lại.
+- Không cấu hình `GITHUB_USER`: audit vẫn ghi đúng `thaijaor` từ token GitHub.
+- App từ clone mới mở được trên Chromium, gọi Gemini thật, hiển thị human approval và hoàn tất Reject.
+- `git status --porcelain` rỗng sau khi chạy; `.env` và DB vẫn được bỏ qua.
+
+Xem [manifest kiểm tra clone sạch](evidence/clean-validation.json),
+[test log](evidence/clean-tests.txt), [sync log](evidence/clean-sync.txt)
+và [log resume](evidence/clean-resume.txt). Các commit sau commit code trên chỉ bổ sung report/bằng chứng.
+
+![App từ clone sạch hoàn tất Reject](evidence/clean-ui-rejected.png)
+
+## Đối chiếu điều kiện nộp
+
+- Fork đúng tên, thuộc `thaijaor`, chế độ Public; mở được bằng browser context mới chưa đăng nhập.
+- Có đủ 4 exercise và `app.py`; không còn TODO hay `raise NotImplementedError` trong phần lời giải.
+- Các lệnh lab và ứng dụng chạy được từ clone sạch với `.env` do người chạy tự tạo.
+- Có comment review public dưới username `thaijaor`; hai link đã được kiểm lại bằng API không đăng nhập.
+- `.env`, DB audit và WAL/SHM không nằm trong Git; kiểm tra exact credential và mẫu token không phát hiện secret trong file nộp.
+
+Xem [kiểm chứng public](evidence/public-verification.json),
+[ảnh fork khi chưa đăng nhập](evidence/public-fork.png) và [kiểm tra secret](evidence/security.json).
+Link điền vào form nộp bài là **link fork** ở đầu report.
 
 ## Giới hạn
 

@@ -1,0 +1,23 @@
+{
+  "checked_utc": "2026-10-16T04:34:27.653157+00:00",
+  "fork_url": "https://github.com/thaijaor/KX-DAY27-NguyenHongThai-2A202602894",
+  "anonymous_repository_status": 200,
+  "is_public": true,
+  "is_fork": true,
+  "fresh_browser_signed_out": true,
+  "required_files_present": true,
+  "env_and_db_not_tracked": true,
+  "public_comments": [
+    {
+      "url": "https://github.com/VinUni-AI20k/PR-Demo/pull/1#issuecomment-6208061929",
+      "author": "thaijaor",
+      "anonymous_status": 200
+    },
+    {
+      "url": "https://github.com/VinUni-AI20k/PR-Demo/pull/2#issuecomment-6208080560",
+      "author": "thaijaor",
+      "anonymous_status": 200
+    }
+  ],
+  "remote_tree_commit": "201cd043996b046cf807c9ec62834b5f69b2c5d3"
+}

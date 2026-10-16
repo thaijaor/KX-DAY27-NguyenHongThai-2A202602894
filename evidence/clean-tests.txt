@@ -1,0 +1,77 @@
+test_auto_audit_and_no_human (test_lab.DurableTests.test_auto_audit_and_no_human) ... fetch_pr: 1 files, head=abcdef1
+route: auto_approve (confidence=95%)
+Posted comment: https://github.com/VinUni-AI20k/PR-Demo/pull/1
+ok
+test_escalation_audit_and_worst_risk (test_lab.DurableTests.test_escalation_audit_and_worst_risk) ... fetch_pr: 1 files, head=abcdef1
+route: escalate (confidence=40%)
+ok
+test_post_failure_is_not_success_and_retry_keeps_analysis (test_lab.DurableTests.test_post_failure_is_not_success_and_retry_keeps_analysis) ... fetch_pr: 1 files, head=abcdef1
+route: human_approval (confidence=65%)
+Posted comment: https://github.com/VinUni-AI20k/PR-Demo/pull/1
+ok
+test_reopen_resume_audit_and_no_duplicate_pending (test_lab.DurableTests.test_reopen_resume_audit_and_no_duplicate_pending) ... fetch_pr: 1 files, head=abcdef1
+route: human_approval (confidence=65%)
+Posted comment: https://github.com/VinUni-AI20k/PR-Demo/pull/1
+ok
+test_wrong_pr_cannot_reuse_thread (test_lab.DurableTests.test_wrong_pr_cannot_reuse_thread) ... fetch_pr: 1 files, head=abcdef1
+route: human_approval (confidence=65%)
+ok
+test_exercise1_all_branches_no_post (test_lab.RoutingTests.test_exercise1_all_branches_no_post) ... fetch_pr: 1 files, head=abcdef1
+analyze: confidence=90%
+route: auto_approve (confidence=90%)
+fetch_pr: 1 files, head=abcdef1
+analyze: confidence=65%
+route: human_approval (confidence=65%)
+fetch_pr: 1 files, head=abcdef1
+analyze: confidence=40%
+route: escalate (confidence=40%)
+ok
+test_exercise2_resume_decisions_and_no_early_post (test_lab.RoutingTests.test_exercise2_resume_decisions_and_no_early_post) ... fetch_pr: 1 files, head=abcdef1
+analyze: confidence=65%
+route: human_approval (confidence=65%)
+Posted comment: https://github.com/VinUni-AI20k/PR-Demo/pull/1
+fetch_pr: 1 files, head=abcdef1
+analyze: confidence=65%
+route: human_approval (confidence=65%)
+fetch_pr: 1 files, head=abcdef1
+analyze: confidence=65%
+route: human_approval (confidence=65%)
+Posted comment: https://github.com/VinUni-AI20k/PR-Demo/pull/1
+ok
+test_exercise3_escalation_then_final_confirmation (test_lab.RoutingTests.test_exercise3_escalation_then_final_confirmation) ... fetch_pr: 1 files, head=abcdef1
+analyze: confidence=40%
+route: escalate (confidence=40%)
+ok
+test_invalid_choice_and_empty_edit (test_lab.RoutingTests.test_invalid_choice_and_empty_edit) ... ok
+test_threshold_boundaries (test_lab.RoutingTests.test_threshold_boundaries) ... route: escalate (confidence=0%)
+route: escalate (confidence=58%)
+route: human_approval (confidence=58%)
+route: human_approval (confidence=73%)
+route: auto_approve (confidence=73%)
+route: auto_approve (confidence=100%)
+ok
+test_ui_approval_and_rejection (test_lab.StreamlitTests.test_ui_approval_and_rejection) ... 2026-10-16 11:32:04.295 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+fetch_pr: 1 files, head=abcdef1
+route: human_approval (confidence=65%)
+ok
+test_ui_auto_success (test_lab.StreamlitTests.test_ui_auto_success) ... 2026-10-16 11:32:05.157 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+fetch_pr: 1 files, head=abcdef1
+route: auto_approve (confidence=95%)
+Posted comment: https://github.com/VinUni-AI20k/PR-Demo/pull/1
+ok
+test_ui_edit_publishes_replacement (test_lab.StreamlitTests.test_ui_edit_publishes_replacement) ... 2026-10-16 11:32:05.463 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+fetch_pr: 1 files, head=abcdef1
+route: human_approval (confidence=65%)
+Posted comment: https://github.com/VinUni-AI20k/PR-Demo/pull/1
+ok
+test_ui_escalation_restore_and_confirm (test_lab.StreamlitTests.test_ui_escalation_restore_and_confirm) ... 2026-10-16 11:32:05.878 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+fetch_pr: 1 files, head=abcdef1
+route: escalate (confidence=40%)
+2026-10-16 11:32:06.119 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+Posted comment: https://github.com/VinUni-AI20k/PR-Demo/pull/1
+ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 4.134s
+
+OK
