@@ -1,9 +1,4 @@
-"""Exercise 2 — HITL with interrupt() + Command(resume=...).
-
-Starting from exercise 1, turn the `human_approval` node from a placeholder
-into real HITL: call interrupt() with a payload containing diff + reasoning,
-then resume the graph with Command(resume=<user choice>).
-"""
+"""Exercise 2: interrupt, approve/reject/edit và tiếp tục bằng Command."""
 
 from __future__ import annotations
 
@@ -12,150 +7,157 @@ import uuid
 
 from dotenv import load_dotenv
 from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command, interrupt
 from rich.console import Console
 from rich.panel import Panel
 
-from common.github import fetch_pr, post_review_comment
-from common.llm import get_llm
-from common.schemas import (
-    AUTO_APPROVE_THRESHOLD,
-    ESCALATE_THRESHOLD,
-    PRAnalysis,
-    ReviewState,
-)
-
+from common.github import post_review_comment
+from common.schemas import ReviewState
+from exercises.exercise_1_confidence import node_analyze, node_fetch_pr, node_route
 
 console = Console()
 
 
-def node_fetch_pr(state: ReviewState) -> dict:
-    console.print("[cyan]→ fetch_pr[/cyan]")
-    with console.status("[dim]Fetching PR from GitHub...[/dim]"):
-        pr = fetch_pr(state["pr_url"])
-    console.print(f"  [green]✓[/green] {len(pr.files_changed)} files, head {pr.head_sha[:7]}")
-    return {"pr_title": pr.title, "pr_diff": pr.diff, "pr_files": pr.files_changed, "pr_head_sha": pr.head_sha}
+def checkpoint_serializer() -> JsonPlusSerializer:
+    return JsonPlusSerializer(
+        allowed_msgpack_modules=[
+            ("common.schemas", "PRAnalysis"),
+            ("common.schemas", "ReviewComment"),
+        ]
+    )
 
 
-def node_analyze(state: ReviewState) -> dict:
-    console.print("[cyan]→ analyze[/cyan]")
-    llm = get_llm().with_structured_output(PRAnalysis)
-    with console.status("[dim]LLM reviewing the diff...[/dim]"):
-        analysis = llm.invoke([
-            {"role": "system", "content": "Senior reviewer. Structured output."},
-            {"role": "user", "content": f"Title: {state['pr_title']}\nDiff:\n{state['pr_diff']}"},
-        ])
-    console.print(f"  [green]✓[/green] confidence={analysis.confidence:.0%}, {len(analysis.comments)} comment(s)")
-    return {"analysis": analysis}
+def approval_payload(state: ReviewState) -> dict:
+    analysis = state["analysis"]
+    return {
+        "kind": "approval_request",
+        "pr_url": state["pr_url"],
+        "confidence": analysis.confidence,
+        "confidence_reasoning": analysis.confidence_reasoning,
+        "summary": analysis.summary,
+        "comments": [c.model_dump() for c in analysis.comments],
+        "diff_preview": state["pr_diff"][:2000],
+    }
 
 
-def node_route(state: ReviewState) -> dict:
-    console.print("[cyan]→ route[/cyan]")
-    c = state["analysis"].confidence
-    if c >= AUTO_APPROVE_THRESHOLD: decision = "auto_approve"
-    elif c < ESCALATE_THRESHOLD:    decision = "escalate"
-    else:                           decision = "human_approval"
-    console.print(f"  [green]✓[/green] decision=[bold]{decision}[/bold] (confidence={c:.0%})")
-    return {"decision": decision}
+def validate_response(response: dict) -> dict:
+    choice = response.get("choice")
+    if choice not in {"approve", "reject", "edit"}:
+        raise ValueError("Choice must be approve, reject or edit")
+    feedback = str(response.get("feedback") or "").strip()
+    if choice == "edit" and not feedback:
+        raise ValueError("Edit requires a replacement review body")
+    return {"human_choice": choice, "human_feedback": feedback}
 
 
 def node_human_approval(state: ReviewState) -> dict:
-    """Pause and ask the human."""
-    a = state["analysis"]
-    # TODO: call interrupt(payload) where payload contains these fields:
-    #         "kind": "approval_request",
-    #         "confidence": a.confidence,
-    #         "confidence_reasoning": a.confidence_reasoning,
-    #         "summary": a.summary,
-    #         "comments": [c.model_dump() for c in a.comments],
-    #         "diff_preview": state["pr_diff"][:2000],
-    # interrupt() returns whatever the caller passes via Command(resume=...).
-    # response = interrupt(...)
-    # return {"human_choice": response["choice"], "human_feedback": response.get("feedback")}
-    raise NotImplementedError("Call interrupt() with an approval_request payload")
+    return validate_response(interrupt(approval_payload(state)))
 
 
 def _render_comment_body(state: ReviewState) -> str:
-    """Build the Markdown comment body posted back to the PR."""
-    a = state["analysis"]
-    lines = [f"### Automated review (confidence {a.confidence:.0%})", "", a.summary, ""]
-    for c in a.comments:
-        lines.append(f"- **[{c.severity}]** `{c.file}:{c.line or '?'}` — {c.body}")
+    if state.get("human_choice") == "edit":
+        return state["human_feedback"]
+    analysis = state["analysis"]
+    lines = [
+        f"### Day27 HITL review (confidence {analysis.confidence:.0%})",
+        "",
+        analysis.summary,
+        "",
+    ]
+    for comment in analysis.comments:
+        lines.append(
+            f"- **[{comment.severity}]** `{comment.file}:{comment.line or '?'}` — {comment.body}"
+        )
     if state.get("human_feedback"):
-        lines.append(f"\n_Reviewer note: {state['human_feedback']}_")
+        lines.append(f"\nReviewer note: {state['human_feedback']}")
+    if state.get("escalation_answers"):
+        lines.append("\nReviewer context:")
+        for question, answer in state["escalation_answers"].items():
+            lines.append(f"- **{question}** {answer}")
     return "\n".join(lines)
 
 
-def _post(state: ReviewState, label: str) -> str:
-    """Post the review comment to the PR. Returns the final_action string."""
-    try:
-        post_review_comment(state["pr_url"], _render_comment_body(state))
-        console.print(f"  [green]✓[/green] posted comment to {state['pr_url']}")
-        return label
-    except Exception as e:
-        console.print(f"  [red]✗[/red] post failed: {e}")
-        return "commit_failed"
+def _post(state: ReviewState, label: str = "committed") -> str:
+    # Lỗi mạng/quyền phải làm lệnh thất bại; không báo giả rằng đã đăng thành công.
+    post_review_comment(state["pr_url"], _render_comment_body(state))
+    console.print(f"Posted comment: {state['pr_url']}")
+    return label
 
 
 def node_commit(state: ReviewState) -> dict:
-    console.print("[cyan]→ commit[/cyan]")
-    if state.get("human_choice") == "approve":
-        return {"final_action": _post(state, "committed")}
-    console.print(f"  [yellow]·[/yellow] skipping comment (choice={state.get('human_choice')})")
+    if state.get("human_choice") in {"approve", "edit"}:
+        return {
+            "final_action": _post(state),
+            "posted_comment_body": _render_comment_body(state),
+        }
     return {"final_action": "rejected"}
 
 
-def node_auto_approve(state):
-    console.print("[cyan]→ auto_approve[/cyan]  [dim]high confidence — posting directly[/dim]")
-    return {"final_action": _post(state, "auto_approved")}
+def node_auto_approve(state: ReviewState) -> dict:
+    return {
+        "final_action": _post(state, "auto_approved"),
+        "posted_comment_body": _render_comment_body(state),
+    }
 
 
-def node_escalate(state):     return {"final_action": "pending_escalation"}
+def node_escalate(state: ReviewState) -> dict:
+    # Exercise 3 bổ sung Q&A; exercise 2 chưa tự đăng nhánh rủi ro cao.
+    return {"final_action": "pending_escalation"}
 
 
 def build_graph():
-    g = StateGraph(ReviewState)
-    for name, fn in [
-        ("fetch_pr", node_fetch_pr), ("analyze", node_analyze), ("route", node_route),
-        ("auto_approve", node_auto_approve), ("human_approval", node_human_approval),
-        ("escalate", node_escalate), ("commit", node_commit),
+    graph = StateGraph(ReviewState)
+    for name, node in [
+        ("fetch_pr", node_fetch_pr),
+        ("analyze", node_analyze),
+        ("route", node_route),
+        ("auto_approve", node_auto_approve),
+        ("human_approval", node_human_approval),
+        ("escalate", node_escalate),
+        ("commit", node_commit),
     ]:
-        g.add_node(name, fn)
-    g.add_edge(START, "fetch_pr")
-    g.add_edge("fetch_pr", "analyze")
-    g.add_edge("analyze", "route")
-    g.add_conditional_edges(
-        "route", lambda s: s["decision"],
-        {"auto_approve": "auto_approve", "human_approval": "human_approval", "escalate": "escalate"},
+        graph.add_node(name, node)
+    graph.add_edge(START, "fetch_pr")
+    graph.add_edge("fetch_pr", "analyze")
+    graph.add_edge("analyze", "route")
+    graph.add_conditional_edges(
+        "route",
+        lambda state: state["decision"],
+        {name: name for name in ("auto_approve", "human_approval", "escalate")},
     )
-    g.add_edge("auto_approve", END)
-    g.add_edge("human_approval", "commit")
-    g.add_edge("commit", END)
-    g.add_edge("escalate", END)
-    # TODO: compile with checkpointer=MemorySaver()
-    return g.compile()
+    graph.add_edge("auto_approve", END)
+    graph.add_edge("escalate", END)
+    graph.add_edge("human_approval", "commit")
+    graph.add_edge("commit", END)
+    return graph.compile(checkpointer=MemorySaver(serde=checkpoint_serializer()))
 
 
 def prompt_human(payload: dict) -> dict:
-    console.print(Panel.fit(
-        f"[bold]Confidence:[/bold] {payload['confidence']:.0%}\n"
-        f"[dim]{payload['confidence_reasoning']}[/dim]\n\n"
-        f"[bold]Summary:[/bold] {payload['summary']}",
-        title="Approval request",
-        border_style="green",
-    ))
-    for c in payload.get("comments", []):
-        console.print(f"  [{c['severity']}] {c['file']}:{c.get('line') or '?'} — {c['body']}")
-    if payload.get("diff_preview"):
-        console.print("\n[dim]--- diff preview ---[/dim]")
-        console.print(payload["diff_preview"])
-
-    choice = ""
-    while choice not in {"approve", "reject", "edit"}:
-        choice = console.input("\n[bold]Choice (approve/reject/edit)?[/bold] ").strip().lower()
-    feedback = console.input("Feedback: ").strip() if choice != "approve" else ""
-    return {"choice": choice, "feedback": feedback}
+    console.print(
+        Panel(payload["summary"], title=f"Approval — {payload['confidence']:.0%}")
+    )
+    console.print(payload["confidence_reasoning"], markup=False)
+    for comment in payload.get("comments", []):
+        console.print(
+            f"{comment['severity']} {comment['file']}:{comment.get('line')} — {comment['body']}",
+            markup=False,
+        )
+    console.print(payload.get("diff_preview", ""), markup=False)
+    while True:
+        choice = console.input("approve/reject/edit? ").strip().lower()
+        feedback = (
+            console.input("Replacement review body / feedback: ").strip()
+            if choice != "approve"
+            else ""
+        )
+        response = {"choice": choice, "feedback": feedback}
+        try:
+            validate_response(response)
+            return response
+        except ValueError as exc:
+            console.print(str(exc))
 
 
 def main() -> None:
@@ -163,26 +165,15 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--pr", required=True)
     args = parser.parse_args()
-
-    console.rule("[bold]Exercise 2 — HITL with interrupt()[/bold]")
-    console.print(f"[dim]PR: {args.pr}[/dim]\n")
-
     app = build_graph()
     thread_id = str(uuid.uuid4())
-    cfg = {"configurable": {"thread_id": thread_id}}
-    console.print(f"[dim]thread_id = {thread_id}[/dim]\n")
-
-    result = app.invoke({"pr_url": args.pr, "thread_id": thread_id}, cfg)
-
-    # TODO: write a `while "__interrupt__" in result:` loop:
-    #   - take payload from result["__interrupt__"][0].value
-    #   - call prompt_human(payload)
-    #   - resume with app.invoke(Command(resume=<answer>), cfg)
-    # while "__interrupt__" in result:
-    #     ...
-
-    console.rule("Done")
-    console.print(result.get("final_action"))
+    config = {"configurable": {"thread_id": thread_id}}
+    console.print(f"thread_id = {thread_id}")
+    result = app.invoke({"pr_url": args.pr, "thread_id": thread_id}, config)
+    while "__interrupt__" in result:
+        response = prompt_human(result["__interrupt__"][0].value)
+        result = app.invoke(Command(resume=response), config)
+    console.print(f"final_action = {result.get('final_action')}")
 
 
 if __name__ == "__main__":

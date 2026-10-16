@@ -1,0 +1,23 @@
+{
+  "started_utc": "2026-10-16T04:27:26.741226+00:00",
+  "pr_url": "https://github.com/VinUni-AI20k/PR-Demo/pull/2",
+  "health_status": 200,
+  "scripted_reviewer": true,
+  "steps": [
+    "Gemini returned escalation; risk factors and questions rendered",
+    "Browser reload restored pending escalation from SQLite using URL thread",
+    "Answers resumed graph; Gemini synthesized review; final confirmation rendered",
+    "Explicit scripted Approve posted refined review to GitHub",
+    "Reload restored completed session without reposting"
+  ],
+  "question_count": 3,
+  "thread_url": "http://127.0.0.1:8527/?thread=ab65d112-7dbe-4774-8201-80fc1af341a5",
+  "browser_errors": [],
+  "new_comments": [
+    {
+      "url": "https://github.com/VinUni-AI20k/PR-Demo/pull/2#issuecomment-6208080560",
+      "author": "thaijaor",
+      "body": "### Day27 HITL review (confidence 52%)\n\nThis pull request introduces user authentication and cloud synchronization features to the tasktrack application, including token storage, a login CLI command, a sync push command, and database schema updates.\n\n- **[blocker]** `tasktrack/auth.py:13` — MD5 is cryptographically broken and completely unsuitable for password hashing. Use a secure password hashing function such as bcrypt, argon2, or pbkdf2_hmac with a unique salt.\n- **[issue]** `tasktrack/auth.py:18` — SHA1 is deprecated for security-sensitive operations. Use secrets.token_hex or hashlib.sha256 for token generation.\n- **[blocker]** `tasktrack/storage.py:27` — Critical SQL injection vulnerability. Constructing queries using f-strings with unsanitized user input allows arbitrary SQL execution. Use parameterized queries instead: conn.execute(\"INSERT INTO tasks (title, user_id) VALUES (?, ?)\", (title, user_id)).\n- **[issue]** `tasktrack/sync.py:11` — Sync endpoint uses plain HTTP (http://). All network traffic including authorization headers and task data should be transmitted securely over HTTPS.\n\nReviewer note: Day27 automated lab validation through Streamlit; approve means publish this review comment, not approve merging the PR. Outstanding security issues remain blockers.\n\nReviewer context:\n- **What is the timeline for replacing MD5 and SHA1 with secure cryptographic algorithms?** Automated lab validation context: educational demo only. No production assumptions or unimplemented fixes are confirmed. Keep MD5, SQL injection, token storage, HTTPS, authorization and migration blockers until corrected and tested.\n- **Does the sync backend support HTTPS, and why was HTTP chosen for the initial implementation?** Automated lab validation context: educational demo only. No production assumptions or unimplemented fixes are confirmed. Keep MD5, SQL injection, token storage, HTTPS, authorization and migration blockers until corrected and tested.\n- **How should the token file permissions be restricted to prevent unauthorized read access by other local users?** Automated lab validation context: educational demo only. No production assumptions or unimplemented fixes are confirmed. Keep MD5, SQL injection, token storage, HTTPS, authorization and migration blockers until corrected and tested."
+    }
+  ]
+}

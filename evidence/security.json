@@ -1,0 +1,8 @@
+{
+  "exact_local_credentials_found": false,
+  "credential_patterns_found": false,
+  "env_and_database_ignored": true,
+  "no_unimplemented_exercises": true,
+  "checked_files": 35,
+  "common_unchanged": true
+}

@@ -1,0 +1,5 @@
+fetch_pr: 4 files, head=501f95e
+analyze: confidence=55%
+route: escalate (confidence=55%)
+confidence = 55%
+final_action = pending_escalation

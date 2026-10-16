@@ -1,0 +1,53 @@
+{
+  "model": "gemini-3.5-flash-lite",
+  "cli_runs": [
+    {
+      "command": "uv run python exercises/exercise_1_confidence.py --pr https://github.com/VinUni-AI20k/PR-Demo/pull/1",
+      "started_utc": "2026-10-16T04:25:42.180046+00:00",
+      "returncode": 0,
+      "scripted_choice": "reject",
+      "escalation_answers": 0,
+      "log": "exercise1-pr1.txt"
+    },
+    {
+      "command": "uv run python exercises/exercise_1_confidence.py --pr https://github.com/VinUni-AI20k/PR-Demo/pull/2",
+      "started_utc": "2026-10-16T04:25:50.509265+00:00",
+      "returncode": 0,
+      "scripted_choice": "reject",
+      "escalation_answers": 0,
+      "log": "exercise1-pr2.txt"
+    },
+    {
+      "command": "uv run python exercises/exercise_2_hitl.py --pr https://github.com/VinUni-AI20k/PR-Demo/pull/1",
+      "started_utc": "2026-10-16T04:25:59.827918+00:00",
+      "returncode": 0,
+      "scripted_choice": "approve",
+      "escalation_answers": 0,
+      "log": "exercise2-approve.txt"
+    },
+    {
+      "command": "uv run python exercises/exercise_3_escalation.py --pr https://github.com/VinUni-AI20k/PR-Demo/pull/2",
+      "started_utc": "2026-10-16T04:26:09.316947+00:00",
+      "returncode": 0,
+      "scripted_choice": "reject",
+      "escalation_answers": 3,
+      "log": "exercise3-escalation-reject.txt"
+    },
+    {
+      "command": "uv run python exercises/exercise_4_audit.py --pr https://github.com/VinUni-AI20k/PR-Demo/pull/1 --thread day27-cli-20261016T042621",
+      "started_utc": "2026-10-16T04:26:21.105636+00:00",
+      "returncode": 0,
+      "scripted_choice": "reject",
+      "escalation_answers": 0,
+      "log": "exercise4-audit-reject.txt"
+    }
+  ],
+  "audit_thread": "day27-cli-20261016T042621",
+  "new_comments": [
+    {
+      "url": "https://github.com/VinUni-AI20k/PR-Demo/pull/1#issuecomment-6208061929",
+      "author": "thaijaor",
+      "body": "### Day27 HITL review (confidence 65%)\n\nThis PR adds a priority field to tasks in the tasktrack application. It updates the SQLite database schema with a priority column, modifies the Task model and Storage methods to support priority, and updates the CLI argument parser and list output to accept and display task priorities.\n\n- **[issue]** `tasktrack/storage.py:10` — Using `CREATE TABLE IF NOT EXISTS` will not add the `priority` column to existing SQLite databases. Consider adding a migration step or checking for the column's existence.\n- **[suggestion]** `tasktrack/cli.py:13` — Consider adding validation or choices to `--priority` (e.g., `choices=[0, 1, 2]`) to prevent users from passing arbitrary integers."
+    }
+  ]
+}

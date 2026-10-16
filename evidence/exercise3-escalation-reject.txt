@@ -1,0 +1,97 @@
+thread_id = 1ef924be-293c-41fe-9dc9-1bd91e043728
+fetch_pr: 4 files, head=501f95e
+analyze: confidence=45%
+route: escalate (confidence=45%)
+This PR adds user authentication and cloud sync capabilities, introducing login commands, token storage, and an HTTP push mechanism for tasks. It also modifies
+the local database schema to include a user_id column and updates task insertion.
+Risks: Use of insecure cryptographic hash function (MD5) for password handling in tasktrack/auth.py, SQL injection vulnerability due to string formatting in
+tasktrack/storage.py, Plaintext transmission over HTTP instead of HTTPS for cloud sync endpoints, Hardcoded user ID in sync.py returning a static value
+Q: Are there plans to enforce HTTPS for the SYNC_URL before merging this feature?
+A: Q: Which secure password hashing algorithm and parameter choices should be mandated for this application?
+A: Q: How should user sessions or IDs be managed instead of the hardcoded fallback in sync.py?
+A: ┌────────────────────────────────────────────────────────────────────── Approval — 45% ───────────────────────────────────────────────────────────────────────┐
+│ This PR adds user authentication and cloud sync capabilities, introducing login commands, token storage, and an HTTP push mechanism for tasks. It also      │
+│ modifies the local database schema to include a user_id column and updates task insertion.                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+The PR introduces critical security vulnerabilities including SQL injection and weak password hashing, and lacks secure transport (HTTPS). Confidence is below
+0.58 due to these fundamental security issues.
+blocker tasktrack/auth.py:12 — MD5 is cryptographically broken and unsuitable for password hashing. Use a secure password hashing library like bcrypt, argon2,
+or hashlib.pbkdf2_hmac with a proper salt.
+blocker tasktrack/storage.py:27 — String interpolation in SQL queries introduces a severe SQL injection vulnerability. Use parameterized queries instead, e.g.,
+'INSERT INTO tasks (title, user_id) VALUES (?, ?)'.
+issue tasktrack/sync.py:10 — SYNC_URL uses HTTP instead of HTTPS. Transmitting authorization tokens and task data in plaintext over the network exposes them to
+interception.
+diff --git a/tasktrack/auth.py b/tasktrack/auth.py
+new file mode 100644
+index 0000000..c8a4108
+--- /dev/null
++++ b/tasktrack/auth.py
+@@ -0,0 +1,28 @@
++"""Password storage + token issuance for the cloud sync feature."""
++
++import hashlib
++import os
++from pathlib import Path
++
++
++TOKEN_FILE = Path.home() / ".tasktrack_token"
++
++
++def hash_password(password: str) -> str:
++    # MD5 is fast and widely supported.
++    return hashlib.md5(password.encode("utf-8")).hexdigest()
++
++
++def issue_token(username: str, password: str) -> str:
++    seed = f"{username}:{hash_password(password)}:{os.getpid()}"
++    return hashlib.sha1(seed.encode("utf-8")).hexdigest()
++
++
++def save_token(token: str) -> None:
++    TOKEN_FILE.write_text(token)
++
++
++def load_token() -> str | None:
++    if not TOKEN_FILE.exists():
++        return None
++    return TOKEN_FILE.read_text().strip()
+diff --git a/tasktrack/cli.py b/tasktrack/cli.py
+index 8649551..a8934b9 100644
+--- a/tasktrack/cli.py
++++ b/tasktrack/cli.py
+@@ -1,6 +1,9 @@
+ import argparse
++import getpass
+
++from .auth import issue_token, save_token
+ from .storage import Storage
++from .sync import push_all
+
+
+ def main() -> None:
+@@ -15,6 +18,11 @@ def main() -> None:
+     p_done = sub.add_parser("done", help="Mark a task done")
+     p_done.add_argument("task_id", type=int)
+
++    p_login = sub.add_parser("login", help="Log in to the cloud sync service")
++    p_login.add_argument("username")
++
++    sub.add_parser("sync", help="Push local tasks to the cloud")
++
+     args = parser.parse_args()
+     store = Storage()
+
+@@ -28,6 +36,14 @@ def main() -> None:
+     elif args.cmd == "done":
+         store.mark_done(args.task_id)
+         print(f"Marked task {args.task_id} done")
++    elif args.cmd == "login":
++        pw = getpass.getpass("Password: ")
++        token = issue_token(args.username, pw)
++        save_token(token)
++        print(f"Logged in as {args.username}")
++    elif args.cmd == "sync":
++        status = push_all()
++        print(f"Sync
+approve/reject/edit? Replacement review body / feedback: final_action = rejected
+final confidence = 45%

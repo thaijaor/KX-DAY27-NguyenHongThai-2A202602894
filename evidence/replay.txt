@@ -1,0 +1,9 @@
+────────────────────────────────────────────────────────────── Replay day27-cli-20261016T042621 ───────────────────────────────────────────────────────────────
+2026-10-16T04:26:25.960464+00:00  fetch_pr           conf=0.00 risk=med  decision=pending    reviewer=-               2078ms  Fetched 3 files, head=1646156
+2026-10-16T04:26:29.087303+00:00  analyze            conf=0.65 risk=med  decision=pending    reviewer=-               3110ms  The code changes are clear and
+straightforward, but there is
+2026-10-16T04:26:29.100315+00:00  route              conf=0.65 risk=med  decision=pending    reviewer=-                  0ms  Branch: human_approval
+2026-10-16T04:26:29.112303+00:00  human_approval     conf=0.65 risk=med  decision=pending    reviewer=-                  0ms  Awaiting reviewer confirmation
+2026-10-16T04:26:29.172364+00:00  human_approval     conf=0.65 risk=med  decision=reject     reviewer=thaijaor          14ms  Automated lab validation:
+exercised Reject; no approval or p
+2026-10-16T04:26:29.181696+00:00  commit             conf=0.65 risk=med  decision=reject     reviewer=thaijaor           0ms  rejected

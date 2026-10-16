@@ -1,4 +1,19 @@
 # Day27 — Track 3: HITL PR Review Agent
+> Cập nhật lần cuối: 2026-10-16
+
+## Bản lời giải — Nguyễn Hồng Thái
+
+`2A202602894` · [Report và hướng dẫn chạy](REPORT.md) · [Bằng chứng](evidence/live-ui.json).
+
+Đã hoàn thiện 4 exercise và app Streamlit. Chạy `uv sync`, tạo `.env` từ `.env.example`,
+điền Gemini API key và GitHub token của bạn, rồi chạy `uv run streamlit run app.py`.
+Tên biến `OPENROUTER_API_KEY` được giữ theo Lab nhưng `.env.example` đã cấu hình Gemini
+qua endpoint OpenAI-compatible; không cần sửa code để đổi provider.
+
+Kiểm thử offline: `uv run python -m unittest discover -s tests -v`.
+Giữ nguyên bố cục thư mục. Phần bên dưới là hướng dẫn và đề bài gốc của giảng viên.
+
+---
 
 A 2-hour lab that builds a human-in-the-loop pull-request review agent in **LangGraph**, end-to-end.
 
